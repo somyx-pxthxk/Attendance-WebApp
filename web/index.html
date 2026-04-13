@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0b1020" />
+    <title>Attendance Helper (75%)</title>
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="container">
+      <header class="header">
+        <h1>Attendance Helper</h1>
+        <p class="sub">Enter your attendance and check 75% requirement.</p>
+      </header>
+
+      <section class="card">
+        <div class="row">
+          <label>
+            <span>Total classes held so far</span>
+            <input id="totalHeld" type="number" min="0" step="1" placeholder="e.g. 40" />
+          </label>
+          <label>
+            <span>Classes attended so far</span>
+            <input id="attended" type="number" min="0" step="1" placeholder="e.g. 32" />
+          </label>
+        </div>
+
+        <div class="form-controls">
+          <div class="seg">
+            <button id="modeNow" class="seg-btn seg-btn--active" type="button">Now</button>
+            <button id="modePlan" class="seg-btn" type="button">Plan</button>
+          </div>
+
+          <div id="upcomingWrap" class="row hidden">
+            <label>
+              <span>Upcoming classes (expected)</span>
+              <input id="upcoming" type="number" min="0" step="1" placeholder="e.g. 20" />
+            </label>
+          </div>
+
+          <div class="actions">
+            <button id="calcBtn" class="primary" type="button">Calculate</button>
+            <button id="resetBtn" class="ghost" type="button">Reset</button>
+          </div>
+        </div>
+
+        <p id="err" class="err hidden"></p>
+      </section>
+
+      <section id="result" class="card hidden">
+        <h2>Result</h2>
+        <div id="resultBody" class="result-body"></div>
+      </section>
+
+      <footer class="footer">
+        <small>Tip: If you’re below 75%, “Classes needed” assumes you attend every class from now on (no absences) until you reach 75%.</small>
+      </footer>
+    </main>
+
+    <script src="/app.js"></script>
+    <script>
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker.register("/service-worker.js").catch(() => {});
+        });
+      }
+    </script>
+  </body>
+</html>
+
