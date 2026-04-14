@@ -2,6 +2,30 @@ const $ = (id) => document.getElementById(id);
 
 let mode = "now"; // "now" | "plan"
 
+function meetsMinimum(attended, totalHeld) {
+  return 4 * attended >= 3 * totalHeld;
+}
+
+function classesNeededToReachMinimum(totalHeld, attended) {
+  return Math.max(0, 3 * totalHeld - 4 * attended);
+}
+
+function leavesYouCanTakeNow(totalHeld, attended) {
+  const numerator = 4 * attended - 3 * totalHeld;
+  if (numerator <= 0) return 0;
+  return Math.floor(numerator / 3);
+}
+
+function ceilDiv(a, b) {
+  if (a <= 0) return 0;
+  return Math.floor((a + b - 1) / b);
+}
+
+function minUpcomingAttendanceNeeded(totalHeld, attended, upcoming) {
+  const needed = ceilDiv(3 * (totalHeld + upcoming) - 4 * attended, 4);
+  return Math.max(0, Math.min(upcoming, needed));
+}
+
 function setMode(next) {
   mode = next;
   $("modeNow").classList.toggle("seg-btn--active", mode === "now");
@@ -49,7 +73,7 @@ function pctFmt(n) {
   return `${Number(n).toFixed(2)}%`;
 }
 
-async function calculate() {
+function calculate() {
   clearError();
   hideResult();
 
@@ -85,36 +109,32 @@ async function calculate() {
     }
   }
 
-  const params = new URLSearchParams();
-  params.set("mode", mode);
-  params.set("totalHeld", String(totalHeld));
-  params.set("attended", String(attended));
-  if (mode === "plan") params.set("upcoming", String(upcoming));
-
-  const res = await fetch(`/api/calc?${params.toString()}`);
-  const data = await res.json();
-  if (!res.ok) {
-    showError(data?.error || "Something went wrong.");
-    return;
-  }
-
   const body = $("resultBody");
 
-  if (data.mode === "now") {
-    const badge = data.ok
+  if (mode === "now") {
+    const pct = totalHeld === 0 ? 0 : (attended * 100) / totalHeld;
+    const ok = meetsMinimum(attended, totalHeld);
+    const leavesNow = leavesYouCanTakeNow(totalHeld, attended);
+    const need = classesNeededToReachMinimum(totalHeld, attended);
+    const badge = ok
       ? `<span class="badge ok">OK (≥ 75%)</span>`
       : `<span class="badge low">LOW (&lt; 75%)</span>`;
     body.innerHTML =
-      metric("Current attendance", `${pctFmt(data.pct)} <span style="font-size:12px;color:#b8c0d9">(${data.attended}/${data.totalHeld})</span>`) +
+      metric("Current attendance", `${pctFmt(pct)} <span style="font-size:12px;color:#b8c0d9">(${attended}/${totalHeld})</span>`) +
       metric("Status", badge) +
-      metric("Leaves you can take now", String(data.leavesNow)) +
-      metric("Classes needed to reach 75%", String(data.classesNeededToReach));
+      metric("Leaves you can take now", String(leavesNow)) +
+      metric("Classes needed to reach 75%", String(need));
   } else {
+    const minAttendUpcoming = minUpcomingAttendanceNeeded(totalHeld, attended, upcoming);
+    const maxLeavesUpcoming = upcoming - minAttendUpcoming;
+    const finalTotal = totalHeld + upcoming;
+    const finalAttendMin = attended + minAttendUpcoming;
+    const finalPctMin = finalTotal === 0 ? 0 : (finalAttendMin * 100) / finalTotal;
     body.innerHTML =
-      metric("Upcoming classes", String(data.upcoming)) +
-      metric("Min classes to attend (upcoming)", String(data.minAttendUpcoming)) +
-      metric("Max leaves you can take (upcoming)", String(data.maxLeavesUpcoming)) +
-      metric("Final attendance (if you attend minimum)", pctFmt(data.finalPctMin));
+      metric("Upcoming classes", String(upcoming)) +
+      metric("Min classes to attend (upcoming)", String(minAttendUpcoming)) +
+      metric("Max leaves you can take (upcoming)", String(maxLeavesUpcoming)) +
+      metric("Final attendance (if you attend minimum)", pctFmt(finalPctMin));
   }
 
   $("result").classList.remove("hidden");
@@ -132,7 +152,7 @@ function resetAll() {
 window.addEventListener("DOMContentLoaded", () => {
   $("modeNow").addEventListener("click", () => setMode("now"));
   $("modePlan").addEventListener("click", () => setMode("plan"));
-  $("calcBtn").addEventListener("click", () => calculate().catch((e) => showError(String(e))));
+  $("calcBtn").addEventListener("click", () => calculate());
   $("resetBtn").addEventListener("click", resetAll);
   setMode("now");
 });

@@ -1,11 +1,16 @@
-const CACHE_NAME = "attendance-helper-v1";
+const CACHE_NAME = "attendance-helper-ghpages-v1";
+
+function assetUrl(path) {
+  return new URL(path, self.location).href;
+}
+
 const STATIC_ASSETS = [
-  "/",
-  "/styles.css",
-  "/app.js",
-  "/manifest.webmanifest",
-  "/icon.svg",
-  "/icon-maskable.svg"
+  assetUrl("./"),
+  assetUrl("styles.css"),
+  assetUrl("app.js"),
+  assetUrl("manifest.webmanifest"),
+  assetUrl("icon.svg"),
+  assetUrl("icon-maskable.svg"),
 ];
 
 self.addEventListener("install", (event) => {
@@ -30,14 +35,6 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
-
-  const url = new URL(event.request.url);
-
-  // Keep API fresh; do not cache API responses.
-  if (url.pathname.startsWith("/api/")) {
-    event.respondWith(fetch(event.request));
-    return;
-  }
 
   event.respondWith(
     caches.match(event.request).then((cached) => {
